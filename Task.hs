@@ -161,7 +161,9 @@ pauseTask tvt = do
     where setPause = atomically $ modifyTVar' tvt (\t -> t { tState = Paused })
 
 toggleTask :: TVar Task -> IO ()
-toggleTask tvt = readTVarIO tvt >>= \t -> if tState t == Running then pauseTask tvt else runTask tvt
+toggleTask tvt = readTVarIO tvt >>= \t -> if tState t `elem` [ Running, Stalled ]
+                                          then pauseTask tvt
+                                          else runTask tvt
 
 resumeTask :: Task -> IO ()
 resumeTask = undefined
