@@ -59,7 +59,7 @@ showNumberedTask (no, tvt) = do
 addTask :: Callback
 addTask = CallbackA $ \uri mng ->
   maybe (putStrLn "Failed to add task, invalid URI" >> return mng)
-        (newTVarIO >=> \t -> newThread t >> return (insertTask mng t))
+        (newTVarIO >=> \t -> runTask t >> return (insertTask mng t))
         (taskFromUri uri)
 
 -- toggle paused state

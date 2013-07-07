@@ -11,7 +11,6 @@ module Task
     , insertTask
     , Task(..)
     , Manager
-    , newThread
     ) where
 
 import Control.Concurrent
@@ -147,8 +146,8 @@ prepareTask task = do
   exists <- doesFileExist taskExec
   unless exists $ copyFile execPath taskExec
 
-runTask :: TVar Task -> IO ()
-runTask tvt = do
+runTaskProcess :: TVar Task -> IO ()
+runTaskProcess tvt = do
   task <- readTVarIO tvt
   prepareTask task
   handle <- runCommand $ "wine '" ++ taskDownloader task ++ "'"
@@ -175,12 +174,12 @@ resumeTask = undefined
 deleteTask :: TVar Task -> IO ()
 deleteTask tvt = pauseTask tvt >> readTVarIO tvt >>= removeDirectoryRecursive . taskDirectory
 
-newThread :: TVar Task -> IO ()
-newThread tvt = do
+runTask :: TVar Task -> IO ()
+runTask tvt = do
   threadId <- forkIO $ do
                      task <- readTVarIO tvt
                      putStrLn $ "Downloading" ++ show task ++ "..."
-                     runTask tvt
+                     runTaskProcess tvt
                      loop tvt
   atomically $ modifyTVar' tvt (\t -> t { tThreadId = Just threadId })
 
@@ -196,10 +195,10 @@ newThread tvt = do
                             newSize <- liftM (toInteger . fileSize) . getFileStatus $ partialFile
                             let currState = if newSize - lastSize > 0 then Running else Stalled
                             atomically $ modifyTVar' tv (\t -> t { tTotalTime   = totalTime
-                                                                , tState       = currState
-                                                                , tCompleted   = newSize
-                                                                , tCurrentRate = (newSize - lastSize) % toInteger threadInterval
-                                                                , tAverageRate = newSize % totalTime})
+                                                                 , tState       = currState
+                                                                 , tCompleted   = newSize
+                                                                 , tCurrentRate = (newSize - lastSize) % toInteger threadInterval
+                                                                 , tAverageRate = newSize % totalTime})
 
 taskCompleted :: Task -> IO Bool
 taskCompleted = doesFileExist . taskFile
