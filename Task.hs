@@ -157,6 +157,9 @@ runTask tvt = do
 pauseTask :: TVar Task -> IO ()
 pauseTask tvt = do
   task <- readTVarIO tvt
+  case tThreadId task of
+    Nothing -> return ()
+    Just tid -> killThread tid
   maybe (putStrLn "Task not started") (\handle -> terminateProcess handle >> setPause) (tProcess task)
     where setPause = atomically $ modifyTVar' tvt (\t -> t { tState = Paused })
 
@@ -192,7 +195,7 @@ newThread tvt = do
                           when exists $ do
                             newSize <- liftM (toInteger . fileSize) . getFileStatus $ partialFile
                             let currState = if newSize - lastSize > 0 then Running else Stalled
-                            atomically $ modifyTVar tv (\t -> t { tTotalTime   = totalTime
+                            atomically $ modifyTVar' tv (\t -> t { tTotalTime   = totalTime
                                                                 , tState       = currState
                                                                 , tCompleted   = newSize
                                                                 , tCurrentRate = (newSize - lastSize) % toInteger threadInterval
