@@ -131,7 +131,7 @@ taskPartialFile :: Task -> FilePath
 taskPartialFile = flip addExtension "!qd" . taskFile
 
 insertTask :: Manager -> TVar Task -> Manager
-insertTask mng tvt = let currId = 1 + IntMap.size mng
+insertTask mng tvt = let currId = 1 + (fst . IntMap.findMax) mng
                      in IntMap.insert currId tvt mng
 
 prepareTask :: Task -> IO ()
