@@ -131,7 +131,7 @@ taskPartialFile :: Task -> FilePath
 taskPartialFile = flip addExtension "!qd" . taskFile
 
 insertTask :: Manager -> TVar Task -> Manager
-insertTask mng tvt = let currId = 1 + (fst . IntMap.findMax) mng
+insertTask mng tvt = let currId = 1 + (\m -> if IntMap.null m then 0 else (fst . IntMap.findMax) m) mng
                      in IntMap.insert currId tvt mng
 
 prepareTask :: Task -> IO ()
@@ -178,7 +178,7 @@ runTask :: TVar Task -> IO ()
 runTask tvt = do
   threadId <- forkIO $ do
                      task <- readTVarIO tvt
-                     putStrLn $ "Downloading" ++ show task ++ "..."
+                     putStrLn $ "Downloading " ++ show task ++ "..."
                      runTaskProcess tvt
                      loop tvt
   atomically $ modifyTVar' tvt (\t -> t { tThreadId = Just threadId })
